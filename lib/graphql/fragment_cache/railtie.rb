@@ -11,8 +11,15 @@ module GraphQL
         class << self
           def store=(store)
             # Handle both:
-            #   store = :memory
+            #   store = :memory_store
             #   store = :mem_cache, ENV['MEMCACHE']
+            #
+            # ActiveSupport 7.1 might raise a warning if coder isn't provided
+            #   (in case cache_format_version wasn't explicitly set)
+            if store == :null_store && Rails.env.test? && Rails.version.to_f == 7.1
+              store = [:null_store, coder: ActiveSupport::Cache::SerializerWithFallback::PassthroughWithFallback]
+            end
+
             if store.is_a?(Symbol) || store.is_a?(Array)
               store = ActiveSupport::Cache.lookup_store(store)
             end
@@ -26,11 +33,7 @@ module GraphQL
 
       if ENV["RACK_ENV"] == "test" || ENV["RAILS_ENV"] == "test"
         initializer "graphql-fragment_cache" do
-          config.graphql_fragment_cache.store = if Rails.version.to_f >= 7.0
-            [:null_store, serializer: :marshal_7_0]
-          else
-            :null_store
-          end
+          config.graphql_fragment_cache.store = :null_store
         end
       end
     end

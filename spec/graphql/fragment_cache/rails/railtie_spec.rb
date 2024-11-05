@@ -3,6 +3,13 @@
 require "rails_helper"
 
 describe GraphQL::FragmentCache::Railtie do
+  it "caching works by default without changing the store" do
+    Rails.application.config.graphql_fragment_cache.store = :null_store # default in tests
+
+    hash = { "key" => { "nested" => "value" } }
+    expect { GraphQL::FragmentCache.cache_store.write_multi(hash) }.not_to raise_error
+  end
+
   describe "config.graphql_fragment_cache.store=" do
     around do |ex|
       old_store = GraphQL::FragmentCache.cache_store
